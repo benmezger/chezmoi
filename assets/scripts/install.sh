@@ -1,4 +1,5 @@
 #!/bin/sh
+
 set -e
 
 usage() {
@@ -6,10 +7,9 @@ usage() {
 	cat <<EOF
 $this: download chezmoi and optionally run chezmoi
 
-Usage: $this [-b bindir] [-d] [-t tag] [chezmoi-args...]
+Usage: $this [-b bindir] [-d] [chezmoi-args...]
   -b sets the installation directory, default is ./bin.
   -d turns on debug logging.
-  -t sets the tag from https://github.com/twpayne/chezmoi/releases, default is latest.
 If chezmoi-args is given, after install chezmoi is executed with chezmoi-args.
 EOF
 	exit 2
@@ -17,12 +17,11 @@ EOF
 
 parse_args() {
 	BINDIR=${BINDIR:-./bin}
-	while getopts "b:dh?t:" arg; do
+	while getopts "b:dh?" arg; do
 		case "${arg}" in
 		b) BINDIR="${OPTARG}" ;;
 		d) log_set_priority 10 ;;
 		h | \?) usage "$0" ;;
-		t) TAG="${OPTARG}" ;;
 		esac
 	done
 	shift $((OPTIND - 1))
@@ -76,14 +75,9 @@ platform_check() {
 	esac
 }
 tag_to_version() {
-	if [ -z "${TAG}" ]; then
-		log_info "checking GitHub for latest tag"
-	else
-		log_info "checking GitHub for tag '${TAG}'"
-	fi
-	REALTAG=$(github_release "twpayne/chezmoi" "${TAG}") && true
+	REALTAG=$(github_release) && true
 	if test -z "${REALTAG}"; then
-		log_crit "unable to find tag '${TAG}'. Use 'latest' or a tag from https://github.com/twpayne/chezmoi/releases."
+		log_crit "unable to find tag '${TAGARG}'. Use 'latest' or a tag from https://github.com/twpayne/chezmoi/releases."
 		exit 1
 	fi
 	# if version starts with 'v', remove it
@@ -286,10 +280,7 @@ http_copy() {
 	echo "${body}"
 }
 github_release() {
-	owner_repo=$1
-	version=$2
-	test -z "${version}" && version="latest"
-	giturl="https://github.com/${owner_repo}/releases/${version}"
+	giturl="https://github.com/twpayne/chezmoi/releases/latest"
 	json=$(http_copy "${giturl}" "Accept:application/json")
 	test -z "${json}" && return 1
 	version=$(echo "${json}" | tr -s '\n' ' ' | sed 's/.*"tag_name":"//' | sed 's/".*//')
@@ -346,6 +337,7 @@ EOF
 FORMAT=tar.gz
 OS=$(uname_os)
 ARCH=$(uname_arch)
+TAGARG=${TAG:-latest}
 
 # use in logging routines
 log_prefix() {
@@ -369,7 +361,7 @@ adjust_os
 
 adjust_arch
 
-log_info "found version: ${VERSION} for ${TAG}/${OS}/${ARCH}"
+log_info "found version ${VERSION} for ${TAGARG}/${OS}/${ARCH}"
 
 NAME=chezmoi_${VERSION}_${OS}_${ARCH}
 TARBALL=${NAME}.${FORMAT}
