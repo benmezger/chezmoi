@@ -6,27 +6,27 @@ usage() {
 	cat <<EOF
 $this: download chezmoi and optionally run chezmoi
 
-Usage: $this [-b bindir] [-c args] [-d] [-t tag] [-- chezmoi-args...]
+Usage: $this [-b bindir] [-d] [-t tag] [chezmoi-args...]
   -b sets the installation directory, default is ./bin.
   -d turns on debug logging.
   -t sets the tag from https://github.com/twpayne/chezmoi/releases, default is latest.
-If chezmoi-args is given, chezmoi is executed with chezmoi-args after install.
+If chezmoi-args is given, after install chezmoi is executed with chezmoi-args.
 EOF
 	exit 2
 }
 
 parse_args() {
 	BINDIR=${BINDIR:-./bin}
-	while getopts "b:c:dh?t:" arg; do
+	while getopts "b:dh?t:" arg; do
 		case "${arg}" in
 		b) BINDIR="${OPTARG}" ;;
-		c) EXECARGS="${arg}" ;;
 		d) log_set_priority 10 ;;
 		h | \?) usage "$0" ;;
 		t) TAG="${OPTARG}" ;;
 		esac
 	done
 	shift $((OPTIND - 1))
+	EXECARGS="$*"
 }
 # this function wraps all the destructive operations
 # if a curl|bash cuts off the end of the script due to
@@ -40,7 +40,7 @@ execute() {
 	hash_sha256_verify "${tmpdir}/${TARBALL}" "${tmpdir}/${CHECKSUM}"
 	(cd "${tmpdir}" && untar "${TARBALL}")
 	test ! -d "${BINDIR}" && install -d "${BINDIR}"
-	binexe="${BINARY}"
+	binexe="chezmoi"
 	if [ "${OS}" = "windows" ]; then
 		binexe="${binexe}.exe"
 	fi
@@ -70,7 +70,7 @@ platform_check() {
 	windows/386) return 0 ;;
 	windows/amd64) return 0 ;;
 	*)
-		log_crit "platform ${PLATFORM} is not supported.  Make sure this script is up-to-date and file request at https://github.com/${PREFIX}/issues/new"
+		log_crit "platform ${PLATFORM} is not supported. Make sure this script is up-to-date and file request at https://github.com/twpayne/chezmoi/issues/new."
 		return 1
 		;;
 	esac
@@ -81,9 +81,9 @@ tag_to_version() {
 	else
 		log_info "checking GitHub for tag '${TAG}'"
 	fi
-	REALTAG=$(github_release "${OWNER}/${REPO}" "${TAG}") && true
+	REALTAG=$(github_release "twpayne/chezmoi" "${TAG}") && true
 	if test -z "${REALTAG}"; then
-		log_crit "unable to find '${TAG}' - use 'latest' or see https://github.com/${PREFIX}/releases for details"
+		log_crit "unable to find tag '${TAG}'. Use 'latest' or a tag from https://github.com/twpayne/chezmoi/releases."
 		exit 1
 	fi
 	# if version starts with 'v', remove it
@@ -207,7 +207,7 @@ uname_os_check() {
 	solaris) return 0 ;;
 	windows) return 0 ;;
 	esac
-	log_crit "uname_os_check '$(uname -s)' got converted to '${os}' which is not a GOOS value. Please file bug at https://github.com/client9/shlib"
+	log_crit "uname_os_check '$(uname -s)' got converted to '${os}' which is not a GOOS value. Please file bug at https://github.com/client9/shlib."
 	return 1
 }
 uname_arch_check() {
@@ -226,7 +226,7 @@ uname_arch_check() {
 	s390x) return 0 ;;
 	amd64p32) return 0 ;;
 	esac
-	log_crit "uname_arch_check '$(uname -m)' got converted to '${arch}' which is not a GOARCH value.  Please file bug report at https://github.com/client9/shlib"
+	log_crit "uname_arch_check '$(uname -m)' got converted to '${arch}' which is not a GOARCH value.  Please file bug report at https://github.com/client9/shlib."
 	return 1
 }
 untar() {
@@ -343,21 +343,16 @@ End of functions from https://github.com/client9/shlib
 ------------------------------------------------------------------------
 EOF
 
-PROJECT_NAME=chezmoi
-OWNER=twpayne
-REPO=chezmoi
-BINARY=chezmoi
 FORMAT=tar.gz
 OS=$(uname_os)
 ARCH=$(uname_arch)
-PREFIX="${OWNER}/${REPO}"
 
 # use in logging routines
 log_prefix() {
-	echo "${PREFIX}"
+	echo "twpayne/chezmoi"
 }
 PLATFORM="${OS}/${ARCH}"
-GITHUB_DOWNLOAD=https://github.com/${OWNER}/${REPO}/releases/download
+GITHUB_DOWNLOAD=https://github.com/twpayne/chezmoi/releases/download
 
 uname_os_check "${OS}"
 uname_arch_check "${ARCH}"
@@ -376,10 +371,10 @@ adjust_arch
 
 log_info "found version: ${VERSION} for ${TAG}/${OS}/${ARCH}"
 
-NAME=${PROJECT_NAME}_${VERSION}_${OS}_${ARCH}
+NAME=chezmoi_${VERSION}_${OS}_${ARCH}
 TARBALL=${NAME}.${FORMAT}
 TARBALL_URL=${GITHUB_DOWNLOAD}/${TAG}/${TARBALL}
-CHECKSUM=${PROJECT_NAME}_${VERSION}_checksums.txt
+CHECKSUM=chezmoi_${VERSION}_checksums.txt
 CHECKSUM_URL=${GITHUB_DOWNLOAD}/${TAG}/${CHECKSUM}
 
 execute
