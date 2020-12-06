@@ -1,0 +1,47 @@
+[windows] stop # FIXME AFAICT go-git does not support file:// URLs on windows
+
+mkhomedir golden
+chmod 755 golden/git
+mkhomedir
+
+# install fake git
+cp golden/git bin
+
+! chezmoi init
+chezmoi init --use-builtin-git=true
+exists $CHEZMOISOURCEDIR/.git
+
+[short] stop
+
+# create a commit
+rm bin/git # disable fake git
+[!exec:git] stop
+cp golden/.bashrc $CHEZMOISOURCEDIR/dot_bashrc
+chezmoi git add dot_bashrc
+chezmoi git commit -- --message 'Add dot_bashrc'
+cp golden/git bin # restore fake git
+
+# test chezmoi init --use-builtin-git=true
+chhome home2/user
+chezmoi init --use-builtin-git=true file://$WORKSLASH/home/user/.local/share/chezmoi
+exists $CHEZMOISOURCEDIR/.git
+cmp $CHEZMOISOURCEDIR/dot_bashrc golden/.bashrc
+
+# create a second commit
+chhome home/user
+rm bin/git # disable fake git
+cp golden/.binary $CHEZMOISOURCEDIR/executable_dot_binary
+chezmoi git add executable_dot_binary
+chezmoi git commit -- --message 'Add executable_dot_binary'
+cp golden/git bin # restore fake git
+
+# test chezmoi update --use-builtin-git=true
+chhome home2/user
+! chezmoi update
+chezmoi update --use-builtin-git=true
+cmp $CHEZMOISOURCEDIR/executable_dot_binary golden/.binary
+
+-- golden/git --
+#!/bin/sh
+
+exit 1

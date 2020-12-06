@@ -6,18 +6,20 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/rogpeppe/go-internal/testscript"
 	"github.com/twpayne/go-vfs"
 	"github.com/twpayne/go-vfs/vfst"
 
-	"github.com/twpayne/chezmoi/cmd"
-	"github.com/twpayne/chezmoi/internal/chezmoi"
+	"github.com/twpayne/chezmoi/next/cmd"
+	"github.com/twpayne/chezmoi/next/internal/chezmoi"
 )
 
 // umask is the umask used in tests. The umask applies to the process and so
@@ -29,13 +31,12 @@ func TestMain(m *testing.M) {
 	chezmoi.SetUmask(umask)
 	os.Exit(testscript.RunMain(m, map[string]func() int{
 		"chezmoi": func() int {
-			if err := cmd.Execute(); err != nil {
-				if s := err.Error(); s != "" {
-					fmt.Fprintf(os.Stderr, "chezmoi: %s\n", s)
-				}
-				return 1
-			}
-			return 0
+			return cmd.Main(cmd.VersionInfo{
+				Version: "v2.0.0+test",
+				Commit:  "HEAD",
+				Date:    time.Now().Format(time.RFC3339),
+				BuiltBy: "testscript",
+			}, os.Args[1:])
 		},
 	}))
 }
@@ -70,7 +71,7 @@ func TestScript(t *testing.T) {
 }
 
 // cmdChHome changes the home directory to its argument, creating the directory
-// if it does not already exists. It updates the HOME environment variable, and,
+// if it does not already exist. It updates the HOME environment variable, and,
 // if running on Windows, USERPROFILE too.
 func cmdChHome(ts *testscript.TestScript, neg bool, args []string) {
 	if neg {
@@ -81,11 +82,12 @@ func cmdChHome(ts *testscript.TestScript, neg bool, args []string) {
 	}
 	var (
 		homeDir          = ts.MkAbs(args[0])
-		chezmoiConfigDir = filepath.Join(homeDir, ".config", "chezmoi")
-		chezmoiSourceDir = filepath.Join(homeDir, ".local", "share", "chezmoi")
+		chezmoiConfigDir = path.Join(homeDir, ".config", "chezmoi")
+		chezmoiSourceDir = path.Join(homeDir, ".local", "share", "chezmoi")
 	)
 	ts.Check(os.MkdirAll(homeDir, 0o777))
 	ts.Setenv("HOME", homeDir)
+	ts.Setenv("HOMESLASH", filepath.ToSlash(homeDir))
 	ts.Setenv("CHEZMOICONFIGDIR", chezmoiConfigDir)
 	ts.Setenv("CHEZMOISOURCEDIR", chezmoiSourceDir)
 	if runtime.GOOS == "windows" {
@@ -190,6 +192,7 @@ func cmdMkHomeDir(ts *testscript.TestScript, neg bool, args []string) {
 				Perm:     0o777,
 				Contents: []byte("#!/bin/sh\n"),
 			},
+			".exists": "# contents of .exists\n",
 			".gitconfig": "" +
 				"[core]\n" +
 				"  autocrlf = false\n" +
@@ -232,6 +235,7 @@ func cmdMkSourceDir(ts *testscript.TestScript, neg bool, args []string) {
 			"dot_absent":            "",
 			"empty_dot_hushlogin":   "",
 			"executable_dot_binary": "#!/bin/sh\n",
+			"exists_dot_exists":     "",
 			"dot_bashrc":            "# contents of .bashrc\n",
 			"dot_gitconfig.tmpl": "" +
 				"[core]\n" +
@@ -305,16 +309,27 @@ func prependDirToPath(dir, path string) string {
 
 func setup(env *testscript.Env) error {
 	var (
-		binDir           = filepath.Join(env.WorkDir, "bin")
-		homeDir          = filepath.Join(env.WorkDir, "home", "user")
-		chezmoiConfigDir = filepath.Join(homeDir, ".config", "chezmoi")
-		chezmoiSourceDir = filepath.Join(homeDir, ".local", "share", "chezmoi")
+		binDir  = filepath.Join(env.WorkDir, "bin")
+		homeDir = filepath.Join(env.WorkDir, "home", "user")
+	)
+
+	absHomeDir, err := filepath.Abs(homeDir)
+	if err != nil {
+		return err
+	}
+	absSlashHomeDir := filepath.ToSlash(absHomeDir)
+
+	var (
+		chezmoiConfigDir = path.Join(absSlashHomeDir, ".config", "chezmoi")
+		chezmoiSourceDir = path.Join(absSlashHomeDir, ".local", "share", "chezmoi")
 	)
 
 	env.Setenv("HOME", homeDir)
+	env.Setenv("HOMESLASH", filepath.ToSlash(homeDir))
 	env.Setenv("PATH", prependDirToPath(binDir, env.Getenv("PATH")))
 	env.Setenv("CHEZMOICONFIGDIR", chezmoiConfigDir)
 	env.Setenv("CHEZMOISOURCEDIR", chezmoiSourceDir)
+	env.Setenv("WORKSLASH", filepath.ToSlash(env.WorkDir))
 	switch runtime.GOOS {
 	case "windows":
 		env.Setenv("EDITOR", filepath.Join(binDir, "editor.cmd"))
@@ -341,11 +356,15 @@ func setup(env *testscript.Env) error {
 			"editor": &vfst.File{
 				Perm: 0o755,
 				Contents: []byte(strings.Join([]string{
-					"#!/bin/sh",
-					"",
-					"for filename in $*; do",
-					"    echo '# edited' >> $filename",
-					"done",
+					`#!/bin/sh`,
+					``,
+					`for name in $*; do`,
+					`    if [ -d $name ]; then`,
+					`        touch $name/.edited`,
+					`    else`,
+					`        echo "# edited" >> $name`,
+					`    fi`,
+					`done`,
 				}, "\n")),
 			},
 			// shell is a non-interactive script that appends the directory in
@@ -366,7 +385,7 @@ func setup(env *testscript.Env) error {
 
 // unix2DOS returns data with UNIX line endings converted to DOS line endings.
 func unix2DOS(data []byte) ([]byte, error) {
-	sb := &strings.Builder{}
+	sb := strings.Builder{}
 	s := bufio.NewScanner(bytes.NewReader(data))
 	for s.Scan() {
 		if _, err := sb.Write(s.Bytes()); err != nil {

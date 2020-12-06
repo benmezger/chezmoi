@@ -5,6 +5,7 @@ go 1.14
 require (
 	github.com/Masterminds/semver/v3 v3.1.1 // indirect
 	github.com/Masterminds/sprig/v3 v3.1.0
+	github.com/Microsoft/go-winio v0.4.15 // indirect
 	github.com/alecthomas/chroma v0.8.2 // indirect
 	github.com/bmatcuk/doublestar v1.3.2 // indirect
 	github.com/bmatcuk/doublestar/v2 v2.0.4
@@ -20,15 +21,18 @@ require (
 	github.com/google/uuid v1.1.2 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
+	github.com/kevinburke/ssh_config v0.0.0-20201106050909-4977a11b4351 // indirect
 	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.4 // indirect
 	github.com/mitchellh/mapstructure v1.4.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.1 // indirect
+	github.com/muesli/combinator v0.3.0
 	github.com/muesli/reflow v0.2.0 // indirect
 	github.com/muesli/termenv v0.7.4 // indirect
 	github.com/pelletier/go-toml v1.8.1
 	github.com/pkg/diff v0.0.0-20200914180035-5b29258ca4f7
 	github.com/rogpeppe/go-internal v1.6.2
+	github.com/rs/zerolog v1.20.0
 	github.com/sergi/go-diff v1.1.0
 	github.com/spf13/afero v1.4.1 // indirect
 	github.com/spf13/cobra v1.1.1
@@ -39,9 +43,11 @@ require (
 	github.com/twpayne/go-vfs v1.7.0
 	github.com/twpayne/go-vfsafero v1.0.0
 	github.com/twpayne/go-xdg/v3 v3.1.0
+	github.com/xanzy/ssh-agent v0.3.0 // indirect
 	github.com/yuin/goldmark v1.2.1 // indirect
 	github.com/zalando/go-keyring v0.1.0
 	go.etcd.io/bbolt v1.3.5
+	go.uber.org/multierr v1.6.0
 	golang.org/x/crypto v0.0.0-20201203163018-be400aefbc4c // indirect
 	golang.org/x/net v0.0.0-20201202161906-c7110b5ffcbb // indirect
 	golang.org/x/oauth2 v0.0.0-20201203001011-0b49973bad19
@@ -51,5 +57,6 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 	howett.net/plist v0.0.0-20201203080718-1454fab16a06
 )

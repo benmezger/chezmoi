@@ -1,0 +1,54 @@
+mksourcedir
+
+chezmoi managed
+cmpenv stdout golden/managed
+
+[short] stop
+
+chezmoi managed --include=all
+cmpenv stdout golden/managed-all
+
+chezmoi managed --include=absent
+cmpenv stdout golden/managed-absent
+
+chezmoi managed --include=dirs
+cmpenv stdout golden/managed-dirs
+
+chezmoi managed --include=files
+cmpenv stdout golden/managed-files
+
+chezmoi managed --include=symlinks
+cmpenv stdout golden/managed-symlinks
+
+-- golden/managed --
+$HOMESLASH/.bashrc
+$HOMESLASH/.binary
+$HOMESLASH/.exists
+$HOMESLASH/.gitconfig
+$HOMESLASH/.hushlogin
+$HOMESLASH/.ssh
+$HOMESLASH/.ssh/config
+$HOMESLASH/.symlink
+-- golden/managed-all --
+$HOMESLASH/.absent
+$HOMESLASH/.bashrc
+$HOMESLASH/.binary
+$HOMESLASH/.exists
+$HOMESLASH/.gitconfig
+$HOMESLASH/.hushlogin
+$HOMESLASH/.ssh
+$HOMESLASH/.ssh/config
+$HOMESLASH/.symlink
+-- golden/managed-absent --
+$HOMESLASH/.absent
+-- golden/managed-dirs --
+$HOMESLASH/.ssh
+-- golden/managed-files --
+$HOMESLASH/.bashrc
+$HOMESLASH/.binary
+$HOMESLASH/.exists
+$HOMESLASH/.gitconfig
+$HOMESLASH/.hushlogin
+$HOMESLASH/.ssh/config
+-- golden/managed-symlinks --
+$HOMESLASH/.symlink
