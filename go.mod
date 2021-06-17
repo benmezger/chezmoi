@@ -29,7 +29,7 @@ require (
 	github.com/pelletier/go-toml v1.8.1
 	github.com/pkg/diff v0.0.0-20200914180035-5b29258ca4f7
 	github.com/rogpeppe/go-internal v1.6.2
-	github.com/sergi/go-diff v1.1.0
+	github.com/sergi/go-diff v1.2.0
 	github.com/spf13/afero v1.4.1 // indirect
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
